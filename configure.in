@@ -1204,6 +1204,7 @@ AC_OUTPUT([
  scripts/augeas/nuthostsconf.aug
  scripts/augeas/nutupssetconf.aug
  scripts/avahi/nut.service
+ scripts/devd/nut-usb.conf
  scripts/hal/Makefile
  scripts/hal/ups-nut-device.fdi
  scripts/hotplug/Makefile
