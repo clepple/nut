@@ -516,14 +516,14 @@ endif
 
 HTML_MACOSX_MANS = macosx-ups.html
 
-SRC_LINUX_I2C_PAGES = asem.txt
-MAN_LINUX_I2C_PAGES = asem.8
+SRC_LINUX_I2C_PAGES = asem.txt oe_smartups.txt
+MAN_LINUX_I2C_PAGES = asem.8 oe_smartups.8
 
 if WITH_LINUX_I2C
    man8_MANS += $(LINUX_I2C_PAGES)
 endif
 
-HTML_LINUX_I2C_MANS = asem.html
+HTML_LINUX_I2C_MANS = asem.html oe_smartups.html
 
 # SOME_DRIVERS
 endif

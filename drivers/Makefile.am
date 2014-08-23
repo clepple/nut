@@ -44,7 +44,7 @@ USB_LIBUSB_DRIVERLIST = usbhid-ups bcmxcp_usb tripplite_usb \
 USB_DRIVERLIST = $(USB_LIBUSB_DRIVERLIST)
 NEONXML_DRIVERLIST = netxml-ups
 MACOSX_DRIVERLIST = macosx-ups
-LINUX_I2C_DRIVERLIST = asem
+LINUX_I2C_DRIVERLIST = asem oe_smartups
 
 # distribute all drivers, even ones that are not built by default
 EXTRA_PROGRAMS = $(SERIAL_DRIVERLIST) $(SNMP_DRIVERLIST) $(USB_DRIVERLIST) $(NEONXML_DRIVERLIST) $(MACOSX_DRIVERLIST)
@@ -226,6 +226,10 @@ macosx_ups_SOURCES = macosx-ups.c
 # Asem
 asem_LDADD = $(LDADD_DRIVERS)
 asem_SOURCES = asem.c
+
+# OpenElectrons SmartUPS
+oe_smartups_LDADD = $(LDADD_DRIVERS)
+oe_smartups_SOURCES = oe_smartups.c
 
 # nutdrv_qx USB/Serial
 nutdrv_qx_SOURCES = nutdrv_qx.c

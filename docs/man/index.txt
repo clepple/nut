@@ -86,6 +86,7 @@ Drivers
 - linkman:nutdrv_atcl_usb[8]
 - linkman:nutdrv_qx[8]
 - linkman:nutupsdrv[8]
+- linkman:oe_smartups[8]
 - linkman:oneac[8]
 - linkman:optiups[8]
 - linkman:powercom[8]

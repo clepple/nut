@@ -1,0 +1,98 @@
+oe_smartups(8)
+==============
+
+NAME
+----
+oe_smartups - driver for OpenElectrons.com I2C SmartUPS
+
+NOTE
+----
+This man page only documents the hardware-specific features of the
+*oe_smartups* driver.  For information about the core driver, see
+linkman:nutupsdrv[8].
+
+SUPPORTED HARDWARE
+------------------
+The *oe_smartups* driver supports the OpenElectrons.com SmartUPS connected to a
+Linux board over I2C. The SmartUPS uses three user-provided AA NiMH
+rechargeable batteries. The driver has been developed on a Raspberry Pi Model
+B, but it should be able to work on other embedded Linux systems. The SmartUPS
+used for development had firmware `V1.03`.
+
+EXTRA ARGUMENTS
+---------------
+The required parameter for this driver is the I2C bus name:
+
+*port*='dev-node'::
+On recent Raspberry Pi boards, this should be `/dev/i2c-1`. (Earlier Raspberry
+Pi boards used `/dev/i2c-0`.)
+
+INSTALLATION
+------------
+This driver is specific to the Linux I2C API, and requires the lm_sensors
+libi2c-dev or its equivalent to compile.
+
+On a Raspberry Pi, the SmartUPS does not seem reliable at the default 100 kHz
+I2C data rate. The manufacturer's software installation script sets up the
+following configuration in `/etc/modprobe.d/i2c.conf`:
+
+  options i2c_bcm2708 baudrate=50000
+
+The driver attempts to confirm the reliability of the I2C bus by requiring the
+identification strings to match the expected values.
+
+IMPLEMENTATION NOTES
+--------------------
+
+Pressing the power button briefly one time will change `ups.contacts` from `0`
+to `1`. Holding it down for more than two seconds will command the UPS to shut
+down in 50 seconds, and the driver will latch the `FSD` status (unless the
+shutdown is cancelled by briefly pressing the power button again). 
+
+//////////////////////////////////////////
+DIAGNOSTICS
+-----------
+
+//////////////////////////////////////////
+
+KNOWN ISSUES AND BUGS
+---------------------
+* The driver is hard-coded to use the default I2C address of 0x24 (as described
+in the vendor documentation; the Linux I2C subsystem shifts this right by one
+bit to use 0x12).
+
+* The time between sending the shutdown command (via `oe_smartups -k` or by
+holding the power button down) and when the UPS powers off is fixed at 50
+seconds.
+
+* Several values are strange, including output voltage/current, and
+`battery.runtime`. 
+
+* NUT does not currently have a good way to send non-critical notifications, such as
+the button press events, to an external program such as linkman:upsmon[8].
+
+* While the UPS allows you to cancel a shutdown, there is no grace period for
+cancellation once *upsmon* detects the `FSD` signal.
+
+* Several settings related to automatic power-up have not yet been implemented.
+Similarly, there is no `shutdown.return`, which would solve the FSD
+cancellation issue.
+
+AUTHORS
+-------
+Charles Lepple <clepple+nut@gmail.com>
+
+SEE ALSO
+--------
+
+The core driver:
+~~~~~~~~~~~~~~~~
+linkman:nutupsdrv[8]
+
+Internet resources:
+~~~~~~~~~~~~~~~~~~~
+Product home page: http://www.openelectrons.com/pages/33
+
+Linux I2C programming guide: https://www.kernel.org/doc/Documentation/i2c/dev-interface
+
+The NUT (Network UPS Tools) home page: http://www.networkupstools.org/
