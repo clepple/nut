@@ -32,7 +32,7 @@
 #include "main.h"
 
 #define DRIVER_NAME	"OpenElectrons.com SmartUPS I2C driver"
-#define DRIVER_VERSION	"0.9"
+#define DRIVER_VERSION	"0.9.1"
 
 /* driver description structure */
 upsdrv_info_t upsdrv_info = {
@@ -47,6 +47,9 @@ upsdrv_info_t upsdrv_info = {
 #define VENDOR_ID_OFFSET 0x8
 #define DEVICE_ID_OFFSET 0x10
 #define FIRMWARE_OFFSET 0
+
+/*! Filter out transient fault states. */
+static const unsigned int max_consecutive_faults = 3;
 
 static int device_initialized = 0;
 static int fsd_latch = 0;
@@ -180,10 +183,12 @@ void upsdrv_initinfo(void)
 #define BATTERY_MAX_CAPACITY	0x56
 #define SECONDS			0x58
 #define READ_OFFSET		RESTART_OPTION
-#define READ_LEN		(SECONDS + 2 - RESTART_OPTION + 1)
+#define READ_LEN		(SECONDS + 4 - RESTART_OPTION + 1)
 
 void upsdrv_updateinfo(void)
 {
+	static unsigned int last_battery_state = 8, fault_counter = 0;
+        unsigned int battery_state;
 	char sign;
 	int ret, tmp, battery_capacity, battery_max_capacity;
 	unsigned char buffer[256];
@@ -258,7 +263,7 @@ void upsdrv_updateinfo(void)
 
 	/* - * - */
 
-	/* Output voltage is non-zero, but not right with V1.03 */
+	/* Output voltage is floating; not implemented in current hardware (2014) */
 #if 0
 	tmp = buffer[OUTPUT_VOLTAGE] | (buffer[OUTPUT_VOLTAGE+1] << 8);
 	upsdebugx(1, "Output voltage: 0x%04x (%d)", tmp, tmp);
@@ -273,7 +278,7 @@ void upsdrv_updateinfo(void)
 
 	/* - * - */
 
-	/* Output current is zero with V1.03 */
+	/* Output voltage is floating; not implemented in current hardware (2014) */
 #if 0
 	tmp = buffer[OUTPUT_CURRENT] | (buffer[OUTPUT_CURRENT+1] << 8);
 	upsdebugx(1, "Output current: 0x%04x (%d)", tmp, tmp);
@@ -289,7 +294,7 @@ void upsdrv_updateinfo(void)
 
 	/* Use this for time skew detection? */
 #if 1
-	tmp = buffer[SECONDS] | (buffer[SECONDS+1] << 8);
+	tmp = buffer[SECONDS] | (buffer[SECONDS+1] << 8) | (buffer[SECONDS+2] << 16) | (buffer[SECONDS+3] << 24);
 	upsdebugx(1, "Seconds: 0x%04x (%d)", tmp, tmp);
 	dstate_setinfo("ups.time", "%d", tmp);
 #endif
@@ -308,12 +313,24 @@ void upsdrv_updateinfo(void)
 
 	/* - * - */
 
-	tmp = buffer[BATTERY_STATE];
-	upsdebugx(1, "Battery state: 0x%04x", tmp);
+	battery_state = buffer[BATTERY_STATE];
+	upsdebugx(1, "Battery state: 0x%04x", battery_state);
+
+	if(8 == battery_state) {
+		if(fault_counter++ < max_consecutive_faults) {
+			upsdebugx(2, "Fault counter = %d; filtering this fault", fault_counter);
+			battery_state = last_battery_state;
+		} else {
+			upsdebugx(2, "Fault counter = %d; passing fault through", fault_counter);
+		}
+	} else {
+		last_battery_state = battery_state;
+		fault_counter = 0;
+	}
 
 	status_init();
 
-	switch(tmp) {
+	switch(battery_state) {
 		case 0: /* Idle: figuring out battery status */
 			status_set("OL");
 			break;
@@ -332,7 +349,9 @@ void upsdrv_updateinfo(void)
 		case 7: /* Discharged */
 			status_set("OB LB");
 			break;
-		/* 8 = fault? */
+		case 8:
+			status_set("FAULT");
+			break;
 		default:
 			upslogx(LOG_NOTICE, "%s: unknown battery state 0x%02x", __func__, tmp);
 	}
