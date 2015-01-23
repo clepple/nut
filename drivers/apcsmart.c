@@ -1235,6 +1235,11 @@ static int getbaseinfo(void)
 	if (!ret || !strcmp(temp, "NA") || !rexhlp(APC_CMDSET_FMT, temp)) {
 		/* We have an old dumb UPS - go to specific code for old stuff */
 		upslogx(LOG_NOTICE, "very old or unknown APC model, support will be limited");
+		if(!ret) {
+			upslogx(LOG_NOTICE, "APC_CMDSET result is empty");
+		} else {
+			upsdebug_hex(1, "APC_CMDSET", temp, ret);
+		}
 		oldapcsetup();
 		return 1;
 	}
